@@ -14,7 +14,7 @@ scaler = joblib.load("scaler.pkl")
 num_imp = joblib.load("num_imputer.pkl")
 cat_imp = joblib.load("cat_imputer.pkl")
 ohe = joblib.load("onehot_encoder.pkl")
-le = joblib.load("label_encoder.pkl")
+edu_encoder = joblib.load("education_encoder.pkl")
 
 st.title("🏦 CreditWise Loan Approval System")
 st.write("Enter applicant details below.")
@@ -22,13 +22,6 @@ st.write("Enter applicant details below.")
 col1, col2 = st.columns(2)
 
 with col1:
-
-    applicant_id = st.number_input(
-    "Applicant ID",
-    min_value=1,
-    value=1001,
-    step=1
-    )
     
     applicant_income = st.number_input(
         "Applicant Income",
@@ -43,8 +36,8 @@ with col1:
     )
 
     employment_status = st.selectbox(
-        "Employment Status",
-        ["Salaried","Self-Employed","Business"]
+    "Employment Status",
+    ["Contract","Salaried","Self-employed","Unemployed"]
     )
 
     age = st.number_input(
@@ -113,18 +106,18 @@ with col2:
     )
 
     loan_purpose = st.selectbox(
-        "Loan Purpose",
-        ["Home","Education","Personal","Business"]
+    "Loan Purpose",
+    ["Business","Car","Education","Home","Personal"]
     )
 
     property_area = st.selectbox(
-        "Property Area",
-        ["Urban","Semi-Urban","Rural"]
+    "Property Area",
+    ["Rural","Semiurban","Urban"]
     )
 
     education = st.selectbox(
-        "Education Level",
-        ["Graduate","Postgraduate","Undergraduate"]
+    "Education Level",
+    ["Graduate","Not Graduate"]
     )
 
     gender = st.selectbox(
@@ -133,8 +126,8 @@ with col2:
     )
 
     employer_category = st.selectbox(
-        "Employer Category",
-        ["Govt","Private","Self"]
+    "Employer Category",
+    ["Business","Government","MNC","Private","Unemployed"]
     )
 
 
@@ -178,35 +171,82 @@ if st.button("Predict Loan Approval"):
     ]
 
     # Categorical columns
-    categorical_cols = [
-        "Employment_Status",
-        "Marital_Status",
-        "Loan_Purpose",
-        "Property_Area",
-        "Gender",
-        "Employer_Category"
+    cat_imp_cols = [
+    "Employment_Status",
+    "Marital_Status",
+    "Loan_Purpose",
+    "Property_Area",
+    "Education_Level",
+    "Gender",
+    "Employer_Category"
+    ]
+
+    ohe_cols = [
+    "Employment_Status",
+    "Marital_Status",
+    "Loan_Purpose",
+    "Property_Area",
+    "Gender",
+    "Employer_Category"
     ]
 
     # Imputation
     input_data[numerical_cols] = num_imp.transform(input_data[numerical_cols])
-    input_data[categorical_cols] = cat_imp.transform(input_data[categorical_cols])
-
+    input_data[cat_imp_cols] = cat_imp.transform(input_data[cat_imp_cols])
+ 
     # Label Encode Education_Level
-    input_data["Education_Level"] = le.transform(input_data["Education_Level"])
+    input_data["Education_Level"] = edu_encoder.transform(
+    input_data["Education_Level"]
+    )
 
     # One Hot Encoding
-    encoded = ohe.transform(input_data[categorical_cols])
+    encoded = ohe.transform(input_data[ohe_cols])
 
     encoded_df = pd.DataFrame(
-        encoded,
-        columns=ohe.get_feature_names_out(categorical_cols)
+    encoded,
+    columns=ohe.get_feature_names_out(ohe_cols)
     )
 
     input_data = pd.concat(
-        [input_data.drop(columns=categorical_cols).reset_index(drop=True),
-         encoded_df.reset_index(drop=True)],
-        axis=1
+    [
+        input_data.drop(columns=ohe_cols).reset_index(drop=True),
+        encoded_df.reset_index(drop=True)
+    ],
+    axis=1
     )
+
+
+    feature_order = [
+        "Applicant_Income",
+        "Coapplicant_Income",
+        "Age",
+        "Dependents",
+        "Credit_Score",
+        "Existing_Loans",
+        "DTI_Ratio",
+        "Savings",
+        "Collateral_Value",
+        "Loan_Amount",
+        "Loan_Term",
+        "Education_Level",
+        "Employment_Status_Salaried",
+        "Employment_Status_Self-employed",
+        "Employment_Status_Unemployed",
+        "Marital_Status_Single",
+        "Loan_Purpose_Car",
+        "Loan_Purpose_Education",
+        "Loan_Purpose_Home",
+        "Loan_Purpose_Personal",
+        "Property_Area_Semiurban",
+        "Property_Area_Urban",
+        "Gender_Male",
+        "Employer_Category_Government",
+        "Employer_Category_MNC",
+        "Employer_Category_Private",
+        "Employer_Category_Unemployed"
+    ]
+
+    input_data = input_data.reindex(columns=feature_order, fill_value=0)
 
     # Scale
     input_scaled = scaler.transform(input_data)
@@ -214,7 +254,6 @@ if st.button("Predict Loan Approval"):
     # Prediction
     prediction = model.predict(input_scaled)[0]
     probability = model.predict_proba(input_scaled)[0]
-
     st.subheader("Prediction Result")
 
     if prediction == 1:
