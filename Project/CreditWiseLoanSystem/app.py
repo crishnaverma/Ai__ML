@@ -8,6 +8,60 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown("""
+<style>
+
+.main{
+    background-color:#F8FAFC;
+}
+
+.hero{
+    background:linear-gradient(90deg,#1E3A8A,#2563EB);
+    padding:25px;
+    border-radius:18px;
+    color:white;
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.metric-card{
+    background:white;
+    padding:18px;
+    border-radius:15px;
+    box-shadow:0px 5px 20px rgba(0,0,0,.08);
+    text-align:center;
+}
+
+.stButton>button{
+    width:100%;
+    background:#2563EB;
+    color:white;
+    border:none;
+    border-radius:10px;
+    height:55px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.stButton>button:hover{
+    background:#1E40AF;
+}
+
+.block-container{
+    padding-top:1rem;
+}
+
+div[data-testid="stMetric"]{
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    box-shadow:0px 2px 12px rgba(0,0,0,.1);
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
 # Load saved files
 model = joblib.load("log_model.pkl")
 scaler = joblib.load("scaler.pkl")
@@ -16,7 +70,14 @@ cat_imp = joblib.load("cat_imputer.pkl")
 ohe = joblib.load("onehot_encoder.pkl")
 edu_encoder = joblib.load("education_encoder.pkl")
 
-st.title("🏦 CreditWise Loan Approval System")
+st.markdown("""
+<div class="hero">
+<h1>🏦 CreditWise Loan Approval System</h1>
+<h4>AI Powered Loan Approval Prediction</h4>
+<p>Built using Machine Learning & Streamlit</p>
+</div>
+""", unsafe_allow_html=True)
+
 st.write("Enter applicant details below.")
 
 col1, col2 = st.columns(2)
@@ -254,11 +315,28 @@ if st.button("Predict Loan Approval"):
     # Prediction
     prediction = model.predict(input_scaled)[0]
     probability = model.predict_proba(input_scaled)[0]
-    st.subheader("Prediction Result")
-
+    
+    approval = probability[1] * 100
+    rejection = probability[0] * 100
+    
+    st.subheader("🎯 Prediction Result")
+    
+    st.progress(int(approval))
+    
     if prediction == 1:
-        st.success("✅ Loan Approved")
-        st.write(f"Approval Probability: **{probability[1]*100:.2f}%**")
+        st.balloons()
+    
+        st.success("🎉 Congratulations! Loan Approved")
+    
+        st.metric(
+            label="Approval Probability",
+            value=f"{approval:.2f}%"
+        )
+    
     else:
         st.error("❌ Loan Rejected")
-        st.write(f"Rejection Probability: **{probability[0]*100:.2f}%**")
+    
+        st.metric(
+            label="Rejection Probability",
+            value=f"{rejection:.2f}%"
+        )
