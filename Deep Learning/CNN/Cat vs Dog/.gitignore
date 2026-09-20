@@ -1,0 +1,6 @@
+animals/
+.ipynb_checkpoints/
+*.pt
+*.pth
+*.h5
+*.onnx
